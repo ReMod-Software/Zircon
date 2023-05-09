@@ -1,0 +1,2 @@
+# Tooling
+Zircon's Main Toolchain is distributed in a self-contained executable, which is more or so a WASM Runner. The toolchain's modules, however, are distributed as WASM Blobs. By default, the executable will ship a versions of the tools at the time when the executable was produced, baked into the executable itself. However, it can update it's modules at any time by a built-in mechanism for updating the modules. It can also add more tools as subcommands by modifying a configuration file.

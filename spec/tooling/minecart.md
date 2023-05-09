@@ -1,0 +1,2 @@
+# Minecart
+Minecart is the package manager and build tool for building Zircon. By default, it is a lot like Rust's Cargo; simple and efficient but can have customization of build scripts. A Package Registry is called a "Quarry" (like `crates.io` hosts "crates"), and a package is called a gem (alternatively: "shard" like Crystal Language).
