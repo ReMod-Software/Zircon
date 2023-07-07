@@ -1,0 +1,132 @@
+// uwu peg me flushed emoji
+
+// common definitions, courtesy of lark-parser
+
+DIGIT: "0".."9"
+HEXDIGIT: "a".."f"|"A".."F"|DIGIT
+
+INT: DIGIT+
+SIGNED_INT: ["+"|"-"] INT
+DECIMAL: INT "." INT? | "." INT
+
+// float = /-?\d+(\.\d+)?([eE][+-]?\d+)?/
+_EXP: ("e"|"E") SIGNED_INT
+FLOAT: INT _EXP | DECIMAL _EXP?
+SIGNED_FLOAT: ["+"|"-"] FLOAT
+
+NUMBER: FLOAT | INT
+SIGNED_NUMBER: ["+"|"-"] NUMBER
+
+//
+// Strings
+//
+_STRING_INNER: /.*?/
+_STRING_ESC_INNER: _STRING_INNER /(?<!\\)(\\\\)*?/
+
+ESCAPED_STRING : "\"" _STRING_ESC_INNER "\""
+
+
+//
+// Names (Variables)
+//
+LCASE_LETTER: "a".."z"
+UCASE_LETTER: "A".."Z"
+
+LETTER: UCASE_LETTER | LCASE_LETTER
+WORD: LETTER+
+
+CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT)*
+
+
+//
+// Whitespace
+//
+WS_INLINE: (" "|/\t/)+
+WS: /[ \t\f\r\n]/+
+
+CR : /\r/
+LF : /\n/
+NEWLINE: (CR? LF)+
+
+
+// Comments
+SH_COMMENT: /#[^\n]*/
+CPP_COMMENT: /\/\/[^\n]*/
+C_COMMENT: "/*" /(.|\n)*?/ "*/"
+SQL_COMMENT: /--[^\n]*/
+
+// pseudocode, but tell the parser to ignore whitespace
+
+%ignore WS
+
+// the grammar
+
+start: (expr | block)*
+
+term: "end"
+name: CNAME
+
+?value: dict
+      | list
+      | tuple
+      | string
+      | atom
+      | SIGNED_NUMBER -> number
+      | "true" -> true
+      | "false" -> false
+      // IDK if we have null but uncomment below if so
+      // | "null" -> null
+list: "[" [value ("," value)*] "]"
+tuple: "(" [(value) ("," value)*] ")"
+
+dict: "{" [kv ("," kv)*] "}"
+kv: string ":" value
+
+string: ESCAPED_STRING
+atom: ":" name
+
+type: name
+    | name "[]" -> array
+    | name "?" -> optional
+
+expr: require
+    | assign
+    | create
+    | invoke
+
+constant: "constant"
+
+require: "require" name ("from" string)?
+assign: constant? name "=" value
+
+create: name "with" create_args term
+create_args: name ":" [(create | value) ("," create | value)*]
+
+invoke: (name ".")? name args
+args: "(" [(value) ("," value)*] ")"
+     | [(value) ("," value)*]
+
+block: enum
+    | function
+    | class
+    | trait
+
+enum: "type" name [name*] term
+
+function: static? function_type body return? term
+
+static: "static"
+return: "return" value
+body: expr* 
+
+function_type: "function" name params kind
+params: "(" [("self" | property) ("," property)*] ")"
+kind: "->" type
+
+class: name ("implements" name)? class_body term
+class_cons: function
+class_body: [class_cons] [class_prop*] [function*]
+class_prop: name ":" type
+
+trait: name trait_body term
+trait_body: [function_type*]
